@@ -7,54 +7,89 @@ Authors:
 
 import sys
 import json
+import math
+import operator
 
 def main():
-    global colour
 
     with open(sys.argv[1]) as file:
         data = json.load(file)
 
-    #Reads JSON data and stores coordinates in dicitonary with values of colour and "blocks"
-    colour = data.get("colour")
-    board = empty_board_dict()
-    board.update({key: colour for key in [tuple(l) for l in data["pieces"]]})
-    board.update({key: "block" for key in [tuple(l) for l in data["blocks"]]})
-    board[(-3,2)] = "HAH"
-
-
-
-
-
-
-    # TODO: Search for and output winning sequence of moves
-    # ...
+    #Reads JSON data and stores coordinates of colour and "blocks"
+    board = initial_board(data)
 
     print_board(board, message="", debug=True)
+    manhattan_distance(data.get("pieces")[0], (-3,3), data.get("colour") )
 
-def empty_board_dict():
+    possible_moves((-2,1), board, data.get("colour"))
+
+
+
+
+
+#Creates a board with initial json information
+def initial_board(data):
     ran = range(-3, +3+1)
     board = {}
     for qr in [(q,r) for q in ran for r in ran if -q-r in ran]:
         board[qr] = ""
+    board.update({key: data.get("colour") for key in [tuple(l) for l in data["pieces"]]})
+    board.update({key: "block" for key in [tuple(l) for l in data["blocks"]]})
     return board
 
+#Heuristic to be ised in A*
+def manhattan_distance(start_pos, current_pos, color):
+    end_points = {  "red" : [(3,-3),(3,-2),(3,-1),(3,0)],
+                    "green" : [(-3,3),(-2,3),(-1,3),(0,3)],
+                    "blue" : [(-3,0),(-2,-1),(-1,-2),(0,-3)]
+    }
+    distances = []
+    for i in end_points.get(color):
+        #euclidean = math.sqrt( (current_pos[0]-i[0])**2 + (current_pos[1]-i[1])**2 )
+        manhattan = abs(current_pos[0]-i[0]) + abs(current_pos[1]-i[1])
+        distances.append(manhattan)
 
-def exit_position(current_pos):
-    red_exit_pos = [(3,-3),(3,-2),(3,-1),(3,0)]
-    green_exit_pos = [(-3,3),(-2,3),(-1,3),(0,3)]
-    blue_exit_pos = [(-3,0),(-2,-1),(-1,-2),(0,-3)]
+#Calcualtes the possible moves excluding blocked tiles and including jumps
+def possible_moves(current_pos, board, colour):
+    #max range for coordinate values
+    max_coord = range(-3,4)
+    six_directions = [(0,-1),(1,-1),(1,0),(0,1),(-1,1),(-1,0)]
+    #hard coded restricted coordinates in range but shouldn't be reachable
+    restricted = [(-1,-3),(-2,-2),(-3,-1),(1,3),(2,2),(3,1)]
+    next_pos = []
 
-    if colour == "red" and current_pos in red_exit_pos:
-        return True
-    elif colour == "green" and current_pos in green_exit_pos:
-        return True
-    elif colour == "blue" and current_pos in blue_exit_pos:
-        return True
-    else:
-        return False
+    for i in six_directions:
+        temp_pos = tuple(map(operator.add, current_pos, i))
+
+        if(temp_pos[0] in max_coord) and (temp_pos[1] in max_coord):
+            if(abs(temp_pos[0]) + abs(temp_pos[1]) <= 6):
+                if(temp_pos not in restricted):
+                    if(board[temp_pos] == "block"):
+                        pass
+                    elif(board[temp_pos] == colour):
+                        next_pos.append(tuple(map(operator.add, temp_pos, i)))
+                    else:
+                        next_pos.append(temp_pos)
+
+    print(next_pos)
 
 
-def print_board(board_dict, message="", debug=False):
+
+def a_star_search(board, start, end):
+    open = PriorityQueue()
+    closed = []
+    total_cost_f = {}
+    current_cost_g = {}
+
+    total_cost_f
+
+
+
+
+
+
+
+def print_board(board_dict, message="", debug=False, **kwargs):
     """
     Helper function to print a drawing of a hexagonal board's contents.
 
@@ -133,7 +168,7 @@ def print_board(board_dict, message="", debug=False):
 
     # fill in the template to create the board drawing, then print!
     board = template.format(message, *cells)
-    print(board)
+    print(board, **kwargs)
 
 
 # when this module is executed, run the `main` function:
