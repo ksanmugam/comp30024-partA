@@ -21,7 +21,7 @@ def main():
     print_board(board, message="", debug=True)
     manhattan_distance(data.get("pieces")[0], (-3,3), data.get("colour") )
 
-    possible_moves((-2,1), board, data.get("colour"))
+    possible_moves((0, -2), board, data.get("colour"))
 
 
 
@@ -60,14 +60,17 @@ def possible_moves(current_pos, board, colour):
 
     for i in six_directions:
         temp_pos = tuple(map(operator.add, current_pos, i))
+        look_ahead = tuple(map(operator.add, temp_pos, i))
 
         if(temp_pos[0] in max_coord) and (temp_pos[1] in max_coord):
             if(abs(temp_pos[0]) + abs(temp_pos[1]) <= 6):
                 if(temp_pos not in restricted):
                     if(board[temp_pos] == "block"):
                         pass
-                    elif(board[temp_pos] == colour):
-                        next_pos.append(tuple(map(operator.add, temp_pos, i)))
+                    elif((board[temp_pos] == colour) and (board[look_ahead] == colour)):
+                        pass
+                    elif((board[temp_pos] == colour) and (board[look_ahead] != colour)):
+                        next_pos.append(look_ahead)
                     else:
                         next_pos.append(temp_pos)
 
