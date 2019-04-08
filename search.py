@@ -18,12 +18,11 @@ def main():
 
     #Reads JSON data and stores coordinates of colour and "blocks"
     board = initial_board(data)
-
     print_board(board, message="", debug=True)
 
-    a_star_search(board, (0,0), data["colour"])
-    #euclidean_cost((0,-1),(2,-2))
 
+    for i in data["pieces"]:
+        print_output(a_star_search(board, tuple(i), data["colour"]), board)
 
 
 
@@ -38,21 +37,44 @@ def initial_board(data):
     return board
 
 #Heuristic to be used in A*
-def euclidean_distance_end(current_pos, colour):
+def hex_distance_end(current_pos, colour):
     end_points = {  "red" : [(3,-3),(3,-2),(3,-1),(3,0)],
                     "green" : [(-3,3),(-2,3),(-1,3),(0,3)],
                     "blue" : [(-3,0),(-2,-1),(-1,-2),(0,-3)]
     }
     distances = []
     for i in end_points.get(colour):
-        euclidean = math.sqrt( (current_pos[0]-i[0])**2 + (current_pos[1]-i[1])**2 )
+        #euclidean = math.sqrt( (current_pos[0]-i[0])**2 + (current_pos[1]-i[1])**2 )
         #manhattan = abs(current_pos[0]-i[0]) + abs(current_pos[1]-i[1])
-        distances.append(euclidean)
+        dx = current_pos[0] - i[0]
+        dy = current_pos[1] - i[1]
+        if sign(dx) == sign(dy):
+            distances.append(abs(dx + dy))
+        else:
+            distances.append(max(abs(dx), abs(dy)))
+
 
     return min(distances)
 
-def euclidean_cost(current_pos, next):
-    return (math.sqrt( (current_pos[0]-next[0])**2 + (current_pos[1]-next[1])**2 ))
+def sign(num):
+    if (num < 0):
+        return -1
+    elif (num > 0):
+        return 1
+    else:
+        return 0
+
+def hex_cost(current_pos, next):
+    #return (math.sqrt( (current_pos[0]-next[0])**2 + (current_pos[1]-next[1])**2 ))
+    dx = next[0] - current_pos[0]
+    dy = next[1] - current_pos[1]
+
+    if sign(dx) == sign(dy):
+        return (abs(dx + dy))
+    else:
+        return (max(abs(dx), abs(dy)))
+
+
 
 #Calcualtes the possible moves excluding blocked tiles and including jumps
 def possible_moves(board, current_pos, colour):
@@ -70,16 +92,19 @@ def possible_moves(board, current_pos, colour):
         if(temp_pos[0] in max_coord) and (temp_pos[1] in max_coord):
             if(abs(temp_pos[0]) + abs(temp_pos[1]) <= 6):
                 if(temp_pos not in restricted):
-                    if(board[temp_pos] == "block"):
+                    try:
+                        if(board[temp_pos] == "block"):
+                            pass
+                        elif (board[temp_pos] == colour and board[look_ahead] == "block"):
+                            pass
+                        elif (board[temp_pos] == colour and board[look_ahead] == colour):
+                            pass
+                        elif(board[temp_pos] == colour and board[look_ahead] != colour):
+                            next_pos.append(look_ahead)
+                        else:
+                            next_pos.append(temp_pos)
+                    except KeyError:
                         pass
-                    elif (board[temp_pos] == colour and board[look_ahead] == "block"):
-                        pass
-                    elif (board[temp_pos] == colour and board[look_ahead] == colour):
-                        pass
-                    elif(board[temp_pos] == colour and board[look_ahead] != colour):
-                        next_pos.append(look_ahead)
-                    else:
-                        next_pos.append(temp_pos)
 
     return next_pos
 
@@ -91,6 +116,8 @@ def a_star_search(board, start, colour):
     cost_so_far = {}
     came_from[start] = None
     cost_so_far[start] = 0
+    priorities_done = []
+    sequence = []
 
     end_points = {  "red" : [(3,-3),(3,-2),(3,-1),(3,0)],
                     "green" : [(-3,3),(-2,3),(-1,3),(0,3)],
@@ -99,25 +126,47 @@ def a_star_search(board, start, colour):
 
     while not frontier.empty():
         current = frontier.get()[1]
-        #print(current)
+        sequence.append(current)
+        board.update({current : colour})
         moves = possible_moves(board, current, colour)
-        print(current)
+        #print_board(board, message="", debug=True)
 
         if current in end_points[colour]:
-            print("FINISHED\n")
             break
 
         for next in moves:
-            new_cost = cost_so_far[current] + euclidean_cost(current, next)
-            if next not in cost_so_far or new_cost < cost_so_far[next]:
+            new_cost = cost_so_far[current] + hex_cost(current, next)
+            priority = new_cost + hex_distance_end(next, colour)
+
+            if priority in priorities_done:
+                break
+            elif next not in cost_so_far or new_cost < cost_so_far[next]:
+                priorities_done.append(priority)
                 cost_so_far[next] = new_cost
-                priority = new_cost + euclidean_distance_end(next, colour)
                 frontier.put((priority, next))
                 came_from[next] = current
+                board.update({current : " "})
 
-    #print ("This is the came_from:",came_from ,"\n")
-    #print(frontier)
-    #return came_from, cost_so_far
+        priorities_done.clear()
+
+    return sequence
+
+
+def print_output(list, board):
+    ran = range(len(list))
+    for i in ran:
+        try:
+            last = list[i+1]
+        except IndexError:
+            print("EXIT from {}.".format(list[i]))
+            board.update({list[i] : " "})
+            return
+        if(hex_cost(list[i], list[i+1]) == 1):
+            print("MOVE from {} to {}.".format(list[i], list[i+1]))
+        elif(hex_cost(list[i], list[i+1]) == 2):
+            print("JUMP from {} to {}.".format(list[i], list[i+1]))
+
+
 
 
 
