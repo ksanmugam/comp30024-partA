@@ -21,9 +21,8 @@ def main():
 
     print_board(board, message="", debug=True)
 
-
-    a_star_search(board, (0,-1), data["colour"])
-
+    a_star_search(board, (0,0), data["colour"])
+    #euclidean_cost((0,-1),(2,-2))
 
 
 
@@ -38,22 +37,25 @@ def initial_board(data):
     board.update({key: "block" for key in [tuple(l) for l in data["blocks"]]})
     return board
 
-#Heuristic to be ised in A*
-def manhattan_distance(current_pos, colour):
+#Heuristic to be used in A*
+def euclidean_distance_end(current_pos, colour):
     end_points = {  "red" : [(3,-3),(3,-2),(3,-1),(3,0)],
                     "green" : [(-3,3),(-2,3),(-1,3),(0,3)],
                     "blue" : [(-3,0),(-2,-1),(-1,-2),(0,-3)]
     }
     distances = []
     for i in end_points.get(colour):
-        #euclidean = math.sqrt( (current_pos[0]-i[0])**2 + (current_pos[1]-i[1])**2 )
-        manhattan = abs(current_pos[0]-i[0]) + abs(current_pos[1]-i[1])
-        distances.append(manhattan)
+        euclidean = math.sqrt( (current_pos[0]-i[0])**2 + (current_pos[1]-i[1])**2 )
+        #manhattan = abs(current_pos[0]-i[0]) + abs(current_pos[1]-i[1])
+        distances.append(euclidean)
 
     return min(distances)
 
+def euclidean_cost(current_pos, next):
+    return (math.sqrt( (current_pos[0]-next[0])**2 + (current_pos[1]-next[1])**2 ))
+
 #Calcualtes the possible moves excluding blocked tiles and including jumps
-def possible_moves(current_pos, board, colour):
+def possible_moves(board, current_pos, colour):
     #max range for coordinate values
     max_coord = range(-3,4)
     six_directions = [(0,-1),(1,-1),(1,0),(0,1),(-1,1),(-1,0)]
@@ -70,49 +72,56 @@ def possible_moves(current_pos, board, colour):
                 if(temp_pos not in restricted):
                     if(board[temp_pos] == "block"):
                         pass
-                    elif((board[temp_pos] == colour) and (board[look_ahead] == colour)):
+                    elif (board[temp_pos] == colour and board[look_ahead] == "block"):
                         pass
-                    elif((board[temp_pos] == colour) and (board[look_ahead] != colour)):
+                    elif (board[temp_pos] == colour and board[look_ahead] == colour):
+                        pass
+                    elif(board[temp_pos] == colour and board[look_ahead] != colour):
                         next_pos.append(look_ahead)
                     else:
                         next_pos.append(temp_pos)
 
-        return next_pos
+    return next_pos
 
 
 def a_star_search(board, start, colour):
-    cost = 1
-    frontier = PriorityQueue()
-    frontier.put(start, 0)
+    frontier = PriorityQueue() #nodes not yet evaluated
+    frontier.put((0, start)) #manhattan_distance_end(start, colour))
     came_from = {}
     cost_so_far = {}
-    came_from['start'] = None
-    cost_so_far['start'] = 0
+    came_from[start] = None
+    cost_so_far[start] = 0
 
     end_points = {  "red" : [(3,-3),(3,-2),(3,-1),(3,0)],
                     "green" : [(-3,3),(-2,3),(-1,3),(0,3)],
                     "blue" : [(-3,0),(-2,-1),(-1,-2),(0,-3)]
-                    }
+                }
 
     while not frontier.empty():
-        current = frontier.get()
+        current = frontier.get()[1]
+        #print(current)
+        moves = possible_moves(board, current, colour)
+        print(current)
 
         if current in end_points[colour]:
+            print("FINISHED\n")
             break
 
-        for next in possible_moves(start, board, colour):
-            new_cost = cost_so_far['start'] + cost
+        for next in moves:
+            new_cost = cost_so_far[current] + euclidean_cost(current, next)
             if next not in cost_so_far or new_cost < cost_so_far[next]:
                 cost_so_far[next] = new_cost
-                priority = new_cost + manhattan_distance(next, colour)
-                frontier.put(next, priority)
+                priority = new_cost + euclidean_distance_end(next, colour)
+                frontier.put((priority, next))
                 came_from[next] = current
 
-    print ("This is the came_from:",came_from ,"\n")
+    #print ("This is the came_from:",came_from ,"\n")
+    #print(frontier)
+    #return came_from, cost_so_far
 
-    return came_from, cost_so_far
 
 
+    #print(sorted(came_from.items(), key = lambda kv:(kv[1], kv[0])))
 
 
 def print_board(board_dict, message="", debug=False, **kwargs):
