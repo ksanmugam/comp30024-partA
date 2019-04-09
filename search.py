@@ -154,6 +154,7 @@ def a_star_search(board, start, colour):
 
 def print_output(list, board):
     ran = range(len(list))
+    line_num = 0
     for i in ran:
         try:
             last = list[i+1]
