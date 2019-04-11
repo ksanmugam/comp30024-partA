@@ -20,10 +20,8 @@ def main():
     board = initial_board(data)
     print_board(board, message="", debug=True)
 
-
     for i in data["pieces"]:
         print_output(a_star_search(board, tuple(i), data["colour"]), board)
-
 
 
 #Creates a board with initial json information
@@ -36,12 +34,13 @@ def initial_board(data):
     board.update({key: "block" for key in [tuple(l) for l in data["blocks"]]})
     return board
 
-#Heuristic to be used in A*
+
+#Heuristic that calculates number of steps to nearest exit
 def hex_distance_end(current_pos, colour):
     end_points = {  "red" : [(3,-3),(3,-2),(3,-1),(3,0)],
                     "green" : [(-3,3),(-2,3),(-1,3),(0,3)],
                     "blue" : [(-3,0),(-2,-1),(-1,-2),(0,-3)]
-    }
+                }
     distances = []
     for i in end_points.get(colour):
         #euclidean = math.sqrt( (current_pos[0]-i[0])**2 + (current_pos[1]-i[1])**2 )
@@ -53,17 +52,10 @@ def hex_distance_end(current_pos, colour):
         else:
             distances.append(max(abs(dx), abs(dy)))
 
-
     return min(distances)
 
-def sign(num):
-    if (num < 0):
-        return -1
-    elif (num > 0):
-        return 1
-    else:
-        return 0
 
+#Heuristic which calculates distance between 2 positions
 def hex_cost(current_pos, next):
     #return (math.sqrt( (current_pos[0]-next[0])**2 + (current_pos[1]-next[1])**2 ))
     dx = next[0] - current_pos[0]
@@ -75,43 +67,55 @@ def hex_cost(current_pos, next):
         return (max(abs(dx), abs(dy)))
 
 
+#Helper function used in hex distance calculations
+def sign(num):
+    if (num < 0):
+        return -1
+    elif (num > 0):
+        return 1
+    else:
+        return 0
 
-#Calcualtes the possible moves excluding blocked tiles and including jumps
+
+#Calculates the possible moves excluding blocked tiles and including jumps
 def possible_moves(board, current_pos, colour):
     #max range for coordinate values
     max_coord = range(-3,4)
     six_directions = [(0,-1),(1,-1),(1,0),(0,1),(-1,1),(-1,0)]
-    #hard coded restricted coordinates in range but shouldn't be reachable
+    #Restricted coordinates in range but shouldn't be reachable
     restricted = [(-1,-3),(-2,-2),(-3,-1),(1,3),(2,2),(3,1)]
     next_pos = []
 
     for i in six_directions:
+        #computes adjacent coordinate in the direction of i
         temp_pos = tuple(map(operator.add, current_pos, i))
+        #computes the coordinate adjacent to the temp_pos in the i direction
         look_ahead = tuple(map(operator.add, temp_pos, i))
 
+        #if next position available, add to next_pos list
         if(temp_pos[0] in max_coord) and (temp_pos[1] in max_coord):
             if(abs(temp_pos[0]) + abs(temp_pos[1]) <= 6):
                 if(temp_pos not in restricted):
-                    try:
-                        if(board[temp_pos] == "block"):
-                            pass
-                        elif (board[temp_pos] == colour and board[look_ahead] == "block"):
-                            pass
-                        elif (board[temp_pos] == colour and board[look_ahead] == colour):
-                            pass
-                        elif(board[temp_pos] == colour and board[look_ahead] != colour):
-                            next_pos.append(look_ahead)
-                        else:
-                            next_pos.append(temp_pos)
-                    except KeyError:
+                    if (board[temp_pos] == colour and board[look_ahead] == "block"):
                         pass
+                    elif (board[temp_pos] == colour and board[look_ahead] == colour):
+                        pass
+                    elif (board[temp_pos] == "block" and board[look_ahead] == "block"):
+                        pass
+                    elif (board[temp_pos] == colour and not board[look_ahead]):
+                        next_pos.append(look_ahead)
+                    elif (board[temp_pos] == "block" and board[look_ahead] == " "):
+                        next_pos.append(look_ahead)
+                    else:
+                        next_pos.append(temp_pos)
 
     return next_pos
 
 
+
 def a_star_search(board, start, colour):
-    frontier = PriorityQueue() #nodes not yet evaluated
-    frontier.put((0, start)) #manhattan_distance_end(start, colour))
+    frontier = PriorityQueue()
+    frontier.put((0, start))
     came_from = {}
     cost_so_far = {}
     came_from[start] = None
@@ -123,13 +127,12 @@ def a_star_search(board, start, colour):
                     "green" : [(-3,3),(-2,3),(-1,3),(0,3)],
                     "blue" : [(-3,0),(-2,-1),(-1,-2),(0,-3)]
                 }
-
+    #loop through unsearched paths with lowest cost so far
     while not frontier.empty():
         current = frontier.get()[1]
         sequence.append(current)
         board.update({current : colour})
         moves = possible_moves(board, current, colour)
-        #print_board(board, message="", debug=True)
 
         if current in end_points[colour]:
             break
@@ -137,6 +140,7 @@ def a_star_search(board, start, colour):
         for next in moves:
             new_cost = cost_so_far[current] + hex_cost(current, next)
             priority = new_cost + hex_distance_end(next, colour)
+
 
             if priority in priorities_done:
                 break
@@ -154,7 +158,6 @@ def a_star_search(board, start, colour):
 
 def print_output(list, board):
     ran = range(len(list))
-    line_num = 0
     for i in ran:
         try:
             last = list[i+1]
@@ -167,11 +170,6 @@ def print_output(list, board):
         elif(hex_cost(list[i], list[i+1]) == 2):
             print("JUMP from {} to {}.".format(list[i], list[i+1]))
 
-
-
-
-
-    #print(sorted(came_from.items(), key = lambda kv:(kv[1], kv[0])))
 
 
 def print_board(board_dict, message="", debug=False, **kwargs):
