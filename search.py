@@ -96,18 +96,21 @@ def possible_moves(board, current_pos, colour):
         if(temp_pos[0] in max_coord) and (temp_pos[1] in max_coord):
             if(abs(temp_pos[0]) + abs(temp_pos[1]) <= 6):
                 if(temp_pos not in restricted):
-                    if (board[temp_pos] == colour and board[look_ahead] == "block"):
-                        pass
-                    elif (board[temp_pos] == colour and board[look_ahead] == colour):
-                        pass
-                    elif (board[temp_pos] == "block" and board[look_ahead] == "block"):
-                        pass
-                    elif (board[temp_pos] == colour and not board[look_ahead]):
-                        next_pos.append(look_ahead)
-                    elif (board[temp_pos] == "block" and board[look_ahead] == " "):
-                        next_pos.append(look_ahead)
-                    else:
-                        next_pos.append(temp_pos)
+                    try:
+                        if (board[temp_pos] == colour and board[look_ahead] == "block"):
+                            pass
+                        elif (board[temp_pos] == colour and board[look_ahead] == colour):
+                            pass
+                        elif (board[temp_pos] == "block" and board[look_ahead] == "block"):
+                            pass
+                        elif (board[temp_pos] == colour and not board[look_ahead]):
+                            next_pos.append(look_ahead)
+                        elif (board[temp_pos] == "block" and board[look_ahead] == " "):
+                            next_pos.append(look_ahead)
+                        else:
+                            next_pos.append(temp_pos)
+                    except KeyError:
+                        continue
 
     return next_pos
 
