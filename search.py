@@ -3,6 +3,9 @@ COMP30024 Artificial Intelligence, Semester 1 2019
 Solution to Project Part A: Searching
 
 Authors:
+Matthew Sy, 860032
+Kirentheren Sanmugam, 823188
+
 """
 
 import sys
@@ -18,8 +21,9 @@ def main():
 
     #Reads JSON data and stores coordinates of colour and "blocks"
     board = initial_board(data)
-    print_board(board, message="", debug=True)
 
+
+    #iterates through pieces and prints A* results
     for i in data["pieces"]:
         print_output(a_star_search(board, tuple(i), data["colour"]), board)
 
@@ -103,9 +107,11 @@ def possible_moves(board, current_pos, colour):
                             pass
                         elif (board[temp_pos] == "block" and board[look_ahead] == "block"):
                             pass
+                        elif (board[temp_pos] == "block" and board[look_ahead] == ""):
+                            next_pos.append(look_ahead)
                         elif (board[temp_pos] == colour and not board[look_ahead]):
                             next_pos.append(look_ahead)
-                        elif (board[temp_pos] == "block" and board[look_ahead] == " "):
+                        elif (board[temp_pos] == "block" and board[look_ahead] == ""):
                             next_pos.append(look_ahead)
                         else:
                             next_pos.append(temp_pos)
@@ -115,7 +121,7 @@ def possible_moves(board, current_pos, colour):
     return next_pos
 
 
-
+# A* adapted from https://www.redblobgames.com/pathfinding/a-star/implementation.html
 def a_star_search(board, start, colour):
     frontier = PriorityQueue()
     frontier.put((0, start))
@@ -140,13 +146,15 @@ def a_star_search(board, start, colour):
         if current in end_points[colour]:
             break
 
+        #Computes the new cost and priority for each position in moves
         for next in moves:
             new_cost = cost_so_far[current] + hex_cost(current, next)
             priority = new_cost + hex_distance_end(next, colour)
 
-
+            #prevents equal priorities ie multiple same cost paths
             if priority in priorities_done:
                 break
+            #Updates the unexplored frontier with the new position and its current cost to goal as the priority
             elif next not in cost_so_far or new_cost < cost_so_far[next]:
                 priorities_done.append(priority)
                 cost_so_far[next] = new_cost
@@ -159,6 +167,7 @@ def a_star_search(board, start, colour):
     return sequence
 
 
+#Prints output in required format
 def print_output(list, board):
     ran = range(len(list))
     for i in ran:
